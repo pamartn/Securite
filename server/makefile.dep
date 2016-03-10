@@ -1,0 +1,3 @@
+socket.o: socket.c socket.h
+server.o: server.c server.h signals.h socket.h
+signals.o: signals.c signals.h
