@@ -2,8 +2,6 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include <X11/Xlib.h>
-#include <string.h>
-#include <stdio.h>
 
 //FILE
 #include <sys/types.h>
@@ -19,9 +17,52 @@
 #include<stdio.h>
 #include<string.h>
 #include <netdb.h>
+#include <stdlib.h>
+
 extern int h_errno;
 
 #define BUF_SIZE 255
+
+void print_choice(FILE *file) {
+    int size = 255;
+    char BUF[size];
+    while(fgets(BUF, size, file) != NULL) {
+        printf("%s",BUF);
+    }
+}
+
+char* read_input() {
+    int size = 255;
+    char* in =  malloc(sizeof(char) * 255);
+    fgets(in, size, stdin);
+    return in;
+}
+
+void interact(int socket) {
+
+    FILE* file = fdopen(socket, "w+");
+
+    print_choice(file); 
+    char *input = read_input();
+    fprintf(file, "%s", input);
+    
+    int choix = 0; 
+
+    while ( choix == 0) {
+        
+        int i;
+
+        for( i = 0; i < 3; i++) {
+            if ( strchr(input, i + '0') != NULL) {
+                choix = i;
+            }
+        }
+    }
+    
+    printf("Choice : %d", choix); 
+}
+
+
 
 int connect_to_server(char *hostname){
 	int socket_desc;
