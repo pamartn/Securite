@@ -23,27 +23,44 @@ extern int h_errno;
 
 #define BUF_SIZE 255
 
-void print_choice(FILE *file) {
-    int size = 255;
-    char BUF[size];
-    while(fgets(BUF, size, file) != NULL) {
-        printf("%s",BUF);
+
+
+void display(FILE *file) {
+    if ( fork() == 0) {
+        int size = 255;
+        char buf[size];
+        while(1) {
+            fgets(buf, size, file);
+            printf("%s",buf);
+        }
     }
 }
 
 char* read_input() {
     int size = 255;
     char* in =  malloc(sizeof(char) * 255);
-    fgets(in, size, stdin);
+    if (fgets(in, size, stdin) == NULL) {
+        exit(1);
+    }
+    printf("%s",in);
     return in;
 }
 
+
+void handle_shell(FILE* f) {
+    printf("ON est ici\n");
+    while(1) {
+        fprintf(f,"%s",read_input());
+    }
+}
+
+
 void interact(int socket) {
 
-    FILE* file = fdopen(socket, "w+");
-
-    print_choice(file); 
-    char *input = read_input();
+    FILE* file = fdopen(socket, "w");
+    FILE* f    = fdopen(socket, "r");
+    display(f); 
+    char *input = "1";
     fprintf(file, "%s", input);
     
     int choix = 0; 
@@ -58,8 +75,14 @@ void interact(int socket) {
             }
         }
     }
+//    free(input); 
+
+    switch(choix) {
     
-    printf("Choice : %d", choix); 
+        case 1 : handle_shell(file);
+        break;
+    
+    }
 }
 
 
@@ -114,6 +137,7 @@ int main(int argc, char **argv) {
 		host = argv[1];
 	else
 		host = "bouleau02";
-	get_screenshot(open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY), host);
+        interact(connect_to_server(host));   
+//	get_screenshot(open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY), host);
 	return 0;
 }
