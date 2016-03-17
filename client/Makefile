@@ -11,10 +11,10 @@ OBJS = $(SRC:.c=.o)
 
 
 client: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ `pkg-config --cflags --libs cairo x11`
+	$(CC) $(CFLAGS) -o $@ $^ 
 
 $(OBJS): $(SRC)
-	$(CC) $(CFLAGS) -c $^ `pkg-config --cflags --libs cairo x11`
+	$(CC) $(CFLAGS) -c $^
 
 makefile.dep: $(SRC)
 	gcc -MM $^ > $@

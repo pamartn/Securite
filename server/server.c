@@ -56,8 +56,6 @@ void screenshot(int socket_client) {
 }
 
 int get_client_choice(FILE *f){
-	fprintf(f, "Please choose an option:\n1:SHELL\n2:SCREENSHOT\n");
-	fflush(f);
 	int choix = 0;
 	char buffer[255];
 	while(choix == 0){

