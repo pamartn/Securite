@@ -15,8 +15,8 @@ Type `make` in project's root folder to compile client and server.
 They can be compiled independently by taping `make` being located in client or server folder.
 
 ### RUN
-In order to run the server type `./server` in server folder.
-In order to run the client type `./client [server_hostname]` in client folder.
+- In order to run the server type `./server` in server folder.
+- In order to run the client type `./client [server_hostname]` in client folder. If no hostname is specified, default is localhost.
 
 ### WHAT TO KNOW
 
